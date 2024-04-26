@@ -25,14 +25,14 @@ type GrpcConfig struct {
 }
 
 func MustLoad() *Config {
-	path := FetchConfigPath()
+	path := fetchConfigPath()
 	if path == "" {
 		panic("config path if empty")
 	}
-	return MustLoadByPath(path)
+	return mustLoadByPath(path)
 }
 
-func MustLoadByPath(path string) *Config {
+func mustLoadByPath(path string) *Config {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		panic("config path does not exists")
 	}
@@ -43,7 +43,7 @@ func MustLoadByPath(path string) *Config {
 	return &cfg
 }
 
-func FetchConfigPath() (path string) {
+func fetchConfigPath() (path string) {
 	flag.StringVar(&path, "config", "", "path to config")
 	flag.Parse()
 	if path == "" {
