@@ -1,0 +1,16 @@
+env: "local"
+storage_path: ""
+token_ttl: 20m
+grpc:
+  host: "localhost"
+  post: "8080"
+  retries_count: 5
+  timeout: 3s
+  insecure: true
+postgres:
+  host: "localhost"
+  post: 5432
+  user: "postgres"
+  password: "postgres"
+  db_name: "postgres"
+  ssl_mode: "disable"
