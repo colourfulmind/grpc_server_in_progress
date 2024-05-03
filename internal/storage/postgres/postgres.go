@@ -80,14 +80,13 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 	case <-errDone:
 		return 0, storage.ErrUserExists
 	case <-ctx.Done():
-		return 0, storage.ErrConnection
+		return 0, storage.ErrConnectionTime
 	case <-done:
 		return id + 1, nil
 	}
 }
 
 func (db *Storage) CreateUser(ctx context.Context, email string) (models.User, error) {
-
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -115,8 +114,37 @@ func (db *Storage) CreateUser(ctx context.Context, email string) (models.User, e
 	case <-errDone:
 		return models.User{}, storage.ErrUserNotFound
 	case <-ctx.Done():
-		return models.User{}, storage.ErrConnection
+		return models.User{}, storage.ErrConnectionTime
 	case <-done:
 		return user, nil
+	}
+}
+
+func (db *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	errDone := make(chan struct{}, 1)
+	done := make(chan struct{}, 1)
+	var user models.User
+
+	go func() {
+		db.DB.WithContext(ctx).Where(&models.User{ID: userID}).First(&user)
+		if user.ID == 0 {
+			errDone <- struct{}{}
+		} else {
+			done <- struct{}{}
+		}
+		close(errDone)
+		close(done)
+	}()
+
+	select {
+	case <-errDone:
+		return false, storage.ErrUserNotFound
+	case <-ctx.Done():
+		return false, storage.ErrConnectionTime
+	case <-done:
+		return user.IsAdmin, nil
 	}
 }
