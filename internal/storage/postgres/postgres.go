@@ -46,6 +46,8 @@ func New(p Postgres) (*Storage, error) {
 	}, nil
 }
 
+// SaveUser check if the email is occupied and save a new user to the database
+// TODO: Add email verification
 func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (int64, error) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
@@ -54,22 +56,21 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 	errDone := make(chan struct{}, 1)
 	var id int64
 
+	var user models.User
 	go func() {
-		var user models.User
 		checkUserExists := db.DB.WithContext(ctx).Find(&user, "email = ?", email)
 		if checkUserExists.RowsAffected != 0 {
 			errDone <- struct{}{}
 		} else {
 			var users []models.User
 			ids := db.DB.WithContext(ctx).Find(&users)
-			userID := ids.RowsAffected
+			id = ids.RowsAffected + 1
 			db.DB.Create(&models.User{
-				ID:       userID + 1,
+				ID:       id + 1,
 				Email:    email,
 				PassHash: passHash,
 			})
 
-			id = userID
 			done <- struct{}{}
 		}
 		close(errDone)
@@ -82,11 +83,12 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 	case <-ctx.Done():
 		return 0, storage.ErrConnectionTime
 	case <-done:
-		return id + 1, nil
+		return id, nil
 	}
 }
 
-func (db *Storage) CreateUser(ctx context.Context, email string) (models.User, error) {
+// User returns a structure user with all the data based on the given email
+func (db *Storage) User(ctx context.Context, email string) (models.User, error) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -120,6 +122,7 @@ func (db *Storage) CreateUser(ctx context.Context, email string) (models.User, e
 	}
 }
 
+// IsAdmin checks if a user is admin
 func (db *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
