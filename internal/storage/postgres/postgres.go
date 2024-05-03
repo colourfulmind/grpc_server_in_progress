@@ -15,12 +15,12 @@ type Storage struct {
 }
 
 type Postgres struct {
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	User     string `yaml:"user"`
-	Password string `yaml:"password"`
-	DBName   string `yaml:"db_name"`
-	SSLMode  string `yaml:"ssl_mode"`
+	host     string `yaml:"host"`
+	port     int    `yaml:"port"`
+	user     string `yaml:"user"`
+	password string `yaml:"password"`
+	dbname   string `yaml:"db_name"`
+	sslMode  string `yaml:"ssl_mode"`
 }
 
 // New create a connection to database and returns a structure pointer to the created database
@@ -29,7 +29,7 @@ func New(p Postgres) (*Storage, error) {
 
 	// Data Source Name
 	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
-		p.Host, p.Port, p.User, p.DBName, p.Password, p.SSLMode)
+		p.host, p.port, p.user, p.dbname, p.password, p.sslMode)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -38,7 +38,7 @@ func New(p Postgres) (*Storage, error) {
 
 	err = db.AutoMigrate(&models.User{})
 	if err != nil {
-		return &Storage{}, err
+		return &Storage{}, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return &Storage{
@@ -49,6 +49,8 @@ func New(p Postgres) (*Storage, error) {
 // SaveUser check if the email is occupied and save a new user to the database
 // TODO: Add email verification
 func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (int64, error) {
+	const op = "internal.storage.postgres.SaveUser"
+
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -79,9 +81,9 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 
 	select {
 	case <-errDone:
-		return 0, storage.ErrUserExists
+		return 0, fmt.Errorf("%s: %w", op, storage.ErrUserExists)
 	case <-ctx.Done():
-		return 0, storage.ErrConnectionTime
+		return 0, fmt.Errorf("%s: %w", op, storage.ErrConnectionTime)
 	case <-done:
 		return id, nil
 	}
@@ -89,6 +91,8 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 
 // User returns a structure user with all the data based on the given email
 func (db *Storage) User(ctx context.Context, email string) (models.User, error) {
+	const op = "internal.storage.postgres.User"
+
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -114,9 +118,9 @@ func (db *Storage) User(ctx context.Context, email string) (models.User, error) 
 
 	select {
 	case <-errDone:
-		return models.User{}, storage.ErrUserNotFound
+		return models.User{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 	case <-ctx.Done():
-		return models.User{}, storage.ErrConnectionTime
+		return models.User{}, fmt.Errorf("%s: %w", op, storage.ErrConnectionTime)
 	case <-done:
 		return user, nil
 	}
@@ -124,6 +128,8 @@ func (db *Storage) User(ctx context.Context, email string) (models.User, error) 
 
 // IsAdmin checks if a user is admin
 func (db *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
+	const op = "internal.storage.postgres.IsAdmin"
+
 	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
 	defer cancel()
 
@@ -144,9 +150,9 @@ func (db *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 
 	select {
 	case <-errDone:
-		return false, storage.ErrUserNotFound
+		return false, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
 	case <-ctx.Done():
-		return false, storage.ErrConnectionTime
+		return false, fmt.Errorf("%s: %w", op, storage.ErrConnectionTime)
 	case <-done:
 		return user.IsAdmin, nil
 	}
