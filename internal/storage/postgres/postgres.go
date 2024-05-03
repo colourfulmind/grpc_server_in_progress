@@ -52,10 +52,10 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 
 	done := make(chan struct{}, 1)
 	errDone := make(chan struct{}, 1)
-	id := make(chan int64, 1)
+	var id int64
 
-	var user models.User
 	go func() {
+		var user models.User
 		checkUserExists := db.DB.WithContext(ctx).Find(&user, "email = ?", email)
 		if checkUserExists.RowsAffected != 0 {
 			errDone <- struct{}{}
@@ -69,12 +69,11 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 				PassHash: passHash,
 			})
 
-			id <- userID
+			id = userID
 			done <- struct{}{}
 		}
 		close(errDone)
 		close(done)
-		close(id)
 	}()
 
 	select {
@@ -83,6 +82,41 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 	case <-ctx.Done():
 		return 0, storage.ErrConnection
 	case <-done:
-		return <-id + 1, nil
+		return id + 1, nil
+	}
+}
+
+func (db *Storage) CreateUser(ctx context.Context, email string) (models.User, error) {
+
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	done := make(chan struct{}, 1)
+	errDone := make(chan struct{}, 1)
+	var user models.User
+
+	go func() {
+		db.DB.WithContext(ctx).Where(&models.User{Email: email}).First(&user)
+		if user.ID == 0 {
+			errDone <- struct{}{}
+		} else {
+			user = models.User{
+				ID:       user.ID,
+				Email:    user.Email,
+				PassHash: user.PassHash,
+			}
+			done <- struct{}{}
+		}
+		close(errDone)
+		close(done)
+	}()
+
+	select {
+	case <-errDone:
+		return models.User{}, storage.ErrUserNotFound
+	case <-ctx.Done():
+		return models.User{}, storage.ErrConnection
+	case <-done:
+		return user, nil
 	}
 }

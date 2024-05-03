@@ -28,6 +28,6 @@ type UserSaver interface {
 
 // UserProvider is an interface that provides information about users
 type UserProvider interface {
-	User(ctx context.Context, email string) (models.User, error)
+	CreateUser(ctx context.Context, email string) (models.User, error)
 	IsAdmin(ctx context.Context, userID int64) (bool, error)
 }
