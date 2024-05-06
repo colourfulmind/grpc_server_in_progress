@@ -123,5 +123,25 @@ func (sso *SSO) Login(ctx context.Context, email, password string, appID int32) 
 }
 
 func (sso *SSO) IsAdmin(ctx context.Context, userID int64) (bool, error) {
-	return false, nil
+	const op = "internal.services.sso.IsAdmin"
+
+	log := sso.Log.With(slog.String("op", op), slog.Int64("user_id", userID))
+	log.Info("checking if user is admin")
+
+	isAdmin, err := sso.IsAdmin(ctx, userID)
+	if err != nil {
+		if errors.Is(err, storage.ErrUserNotFound) {
+			log.Warn("user not found", sl.Err(err))
+			return false, fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
+		}
+		if errors.Is(err, storage.ErrConnectionTime) {
+			log.Error("connection time expired", sl.Err(err))
+			return false, ErrConnectionTime
+		}
+		log.Error("failed to get user", sl.Err(err))
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
+	return isAdmin, nil
 }
