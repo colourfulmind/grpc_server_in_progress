@@ -111,6 +111,8 @@ func (sso *SSO) Login(ctx context.Context, email, password string, appID int32) 
 		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
+	// TODO: AppProvider
+
 	token, err := jwt.New(user, sso.TokenTTl)
 	if err != nil {
 		log.Error("failed to generate token", sl.Err(err))

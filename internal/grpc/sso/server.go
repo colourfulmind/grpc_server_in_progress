@@ -34,9 +34,9 @@ func (s *ServerSSO) RegisterNewUser(ctx context.Context, req *server.RegisterReq
 	const op = "internal.grpc.sso.RegisterNewUser"
 
 	log := s.log.With(slog.String("op", op), slog.String("email", req.GetEmail()))
-	log.Info("register new user")
+	log.Info("attempting to register new user")
 
-	if err := ValidateCredentials(req); err != nil {
+	if err := ValidateCredentials(req.GetEmail(), req.GetPassword()); err != nil {
 		log.Error("invalid email or password", sl.Err(err))
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
@@ -59,20 +59,35 @@ func (s *ServerSSO) RegisterNewUser(ctx context.Context, req *server.RegisterReq
 	}, nil
 }
 
-func ValidateCredentials(req *server.RegisterRequest) error {
+func (s *ServerSSO) Login(ctx context.Context, req *server.LoginRequest) (*server.LoginResponse, error) {
+	const op = "internal.grpc.sso.Login"
+
+	log := s.log.With(slog.String("op", op), slog.String("email", req.GetEmail()))
+	log.Info("attempting to login user")
+
+	if err := ValidateCredentials(req.GetEmail(), req.GetPassword()); err != nil {
+		log.Error("invalid email or password", sl.Err(err))
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	token, err := s.sso.Login(ctx, req.GetEmail(), req.GetPassword(), req.GetAppId())
+	if err != nil {
+
+	}
+
+	panic("not implemented")
+}
+
+func ValidateCredentials(email, password string) error {
 	// TODO: regex to check the email
-	if req.GetEmail() == "" {
+	if email == "" {
 		return ewrap.ErrEmailRequired
 	}
 	// TODO: minimum password length
-	if req.GetPassword() == "" {
+	if password == "" {
 		return ewrap.ErrPasswordRequired
 	}
 	return nil
-}
-
-func Login(ctx context.Context, req *server.LoginRequest) (*server.LoginResponse, error) {
-	panic("not implemented")
 }
 
 func IsAdmin(ctx context.Context, req *server.AdminRequest) (*server.AdminResponse, error) {
