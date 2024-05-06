@@ -122,6 +122,7 @@ func (sso *SSO) Login(ctx context.Context, email, password string, appID int32) 
 	return token, nil
 }
 
+// IsAdmin checks if user is admin. Returns error if user is not found.
 func (sso *SSO) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	const op = "internal.services.sso.IsAdmin"
 
