@@ -92,8 +92,8 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 	}
 }
 
-// User returns a structure user with all the data based on the given email
-func (db *Storage) User(ctx context.Context, email string) (models.User, error) {
+// ProvideUser returns a structure user with all the data based on the given email
+func (db *Storage) ProvideUser(ctx context.Context, email string) (models.User, error) {
 	const op = "internal.storage.postgres.User"
 
 	ctx, cancel := context.WithTimeout(ctx, timeout)

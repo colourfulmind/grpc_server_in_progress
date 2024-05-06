@@ -6,7 +6,7 @@ option go_package = "server.v2;server";
 
 import "google/protobuf/empty.proto";
 
-service Auth {
+service SSO {
   rpc RegisterNewUser (RegisterRequest) returns (RegisterResponse);
   rpc Login (LoginRequest) returns (LoginResponse);
   rpc IsAdmin (AdminRequest) returns (AdminResponse);
