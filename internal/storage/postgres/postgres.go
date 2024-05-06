@@ -10,6 +10,9 @@ import (
 	"time"
 )
 
+// TODO: передать из yaml файла
+const timeout = 30 * time.Second
+
 type Storage struct {
 	DB *gorm.DB
 }
@@ -51,7 +54,7 @@ func New(p Postgres) (*Storage, error) {
 func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (int64, error) {
 	const op = "internal.storage.postgres.SaveUser"
 
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	done := make(chan struct{}, 1)
@@ -93,7 +96,7 @@ func (db *Storage) SaveUser(ctx context.Context, email string, passHash []byte) 
 func (db *Storage) User(ctx context.Context, email string) (models.User, error) {
 	const op = "internal.storage.postgres.User"
 
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	done := make(chan struct{}, 1)
@@ -130,7 +133,7 @@ func (db *Storage) User(ctx context.Context, email string) (models.User, error) 
 func (db *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 	const op = "internal.storage.postgres.IsAdmin"
 
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	errDone := make(chan struct{}, 1)
