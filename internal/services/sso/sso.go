@@ -13,9 +13,6 @@ import (
 	"time"
 )
 
-// TODO: add to yaml
-const timeout = 3 * time.Second
-
 var (
 	ErrUserExists         = errors.New("user does not exists")
 	ErrInvalidCredentials = errors.New("invalid login or password")
