@@ -10,6 +10,7 @@ import (
 	"main/pkg/logger/sl"
 )
 
+// App is a structure to store a pointer to grpc server
 type App struct {
 	Server *grpcserver.App
 }

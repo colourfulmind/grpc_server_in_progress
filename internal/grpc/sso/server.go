@@ -11,18 +11,23 @@ import (
 	server "main/protos/gen/go/blog"
 )
 
+const EmptyValue = 0
+
+// ServerSSO is a structure to store data for sso server describes in protobuf.
 type ServerSSO struct {
 	server.UnimplementedSSOServer
 	sso SSO
 	log *slog.Logger
 }
 
+// SSO is an interface which describes methods for the sso server.
 type SSO interface {
 	RegisterNewUser(ctx context.Context, email, password string) (int64, error)
 	Login(ctx context.Context, email, password string, appID int32) (string, error)
 	IsAdmin(ctx context.Context, userID int64) (bool, error)
 }
 
+// Register registers a new sso server.
 func Register(s *grpc.Server, sso SSO, log *slog.Logger) {
 	server.RegisterSSOServer(s, &ServerSSO{
 		sso: sso,
@@ -30,11 +35,12 @@ func Register(s *grpc.Server, sso SSO, log *slog.Logger) {
 	})
 }
 
+// RegisterNewUser registers a new user. Returns errors in cases when the user already exists,
+// connection to the database failed or incorrect email or password are provided.
 func (s *ServerSSO) RegisterNewUser(ctx context.Context, req *server.RegisterRequest) (*server.RegisterResponse, error) {
 	const op = "internal.grpc.sso.RegisterNewUser"
 
 	log := s.log.With(slog.String("op", op), slog.String("email", req.GetEmail()))
-	log.Info("attempting to register new user")
 
 	if err := ValidateCredentials(req.GetEmail(), req.GetPassword()); err != nil {
 		log.Error("invalid email or password", sl.Err(err))
@@ -51,6 +57,7 @@ func (s *ServerSSO) RegisterNewUser(ctx context.Context, req *server.RegisterReq
 			log.Error("failed to connect to the database", sl.Err(err))
 			return nil, ewrap.ErrConnectionTime
 		}
+		log.Error("internal error", slog.String("op", op), sl.Err(err))
 		return nil, ewrap.InternalError
 	}
 
@@ -59,11 +66,12 @@ func (s *ServerSSO) RegisterNewUser(ctx context.Context, req *server.RegisterReq
 	}, nil
 }
 
+// Login logs in a user. Returns error if incorrect email or password are provided or
+// connection to the database failed.
 func (s *ServerSSO) Login(ctx context.Context, req *server.LoginRequest) (*server.LoginResponse, error) {
 	const op = "internal.grpc.sso.Login"
 
 	log := s.log.With(slog.String("op", op), slog.String("email", req.GetEmail()))
-	log.Info("attempting to login user")
 
 	if err := ValidateCredentials(req.GetEmail(), req.GetPassword()); err != nil {
 		log.Error("invalid email or password", sl.Err(err))
@@ -72,12 +80,24 @@ func (s *ServerSSO) Login(ctx context.Context, req *server.LoginRequest) (*serve
 
 	token, err := s.sso.Login(ctx, req.GetEmail(), req.GetPassword(), req.GetAppId())
 	if err != nil {
-
+		if errors.Is(err, sso.ErrInvalidCredentials) {
+			log.Warn("invalid credentials", sl.Err(err))
+			return nil, ewrap.ErrInvalidCredentials
+		}
+		if errors.Is(err, sso.ErrConnectionTime) {
+			log.Error("failed to connect to the database", sl.Err(err))
+			return nil, ewrap.ErrConnectionTime
+		}
+		log.Error("internal error", slog.String("op", op), sl.Err(err))
+		return nil, ewrap.InternalError
 	}
 
-	panic("not implemented")
+	return &server.LoginResponse{
+		Token: token,
+	}, nil
 }
 
+// ValidateCredentials checks if email or password formats are correct.
 func ValidateCredentials(email, password string) error {
 	// TODO: regex to check the email
 	if email == "" {
@@ -90,6 +110,40 @@ func ValidateCredentials(email, password string) error {
 	return nil
 }
 
-func IsAdmin(ctx context.Context, req *server.AdminRequest) (*server.AdminResponse, error) {
-	panic("not implemented")
+// IsAdmin checks if user is an admin. Returns error if incorrect user id is provided.
+func (s *ServerSSO) IsAdmin(ctx context.Context, req *server.AdminRequest) (*server.AdminResponse, error) {
+	const op = "internal.grpc.sso.IsAdmin"
+
+	log := s.log.With(slog.String("op", op), slog.Int64("user_id", req.GetUserId()))
+
+	if err := ValidateAdmin(req.GetUserId()); err != nil {
+		log.Warn("invalid credentials", sl.Err(err))
+		return nil, ewrap.ErrInvalidCredentials
+	}
+
+	isAdmin, err := s.sso.IsAdmin(ctx, req.GetUserId())
+	if err != nil {
+		if errors.Is(err, sso.ErrInvalidCredentials) {
+			log.Warn("invalid credentials", sl.Err(err))
+			return nil, ewrap.ErrInvalidCredentials
+		}
+		if errors.Is(err, sso.ErrConnectionTime) {
+			log.Error("failed to connect to the database", sl.Err(err))
+			return nil, ewrap.ErrConnectionTime
+		}
+		log.Error("internal error", slog.String("op", op), sl.Err(err))
+		return nil, ewrap.InternalError
+	}
+
+	return &server.AdminResponse{
+		IsAdmin: isAdmin,
+	}, nil
+}
+
+// ValidateAdmin checks if provided user id is correct.
+func ValidateAdmin(userID int64) error {
+	if userID == EmptyValue {
+		return ewrap.UserIdIsRequired
+	}
+	return nil
 }
