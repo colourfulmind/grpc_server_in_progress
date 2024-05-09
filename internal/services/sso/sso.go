@@ -103,7 +103,7 @@ func (sso *SSO) Login(ctx context.Context, email, password string, appID int32) 
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	if err = brypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
+	if err = bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
 		log.Warn("invalid credentials", sl.Err(err))
 		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}

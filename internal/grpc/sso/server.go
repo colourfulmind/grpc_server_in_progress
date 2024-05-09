@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"google.golang.org/grpc"
 	"log/slog"
 	"main/internal/ewrap"
 	"main/internal/services/sso"

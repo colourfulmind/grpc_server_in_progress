@@ -29,6 +29,6 @@ func New(log *slog.Logger, cfg *config.Config) (*App, error) {
 	ssoService := sso.New(log, storage, storage, cfg.TokenTTl)
 
 	return &App{
-		Server: grpcserver.New(ssoService, cfg.Grpc.Host, cfg.Grpc.Port),
+		Server: grpcserver.New(ssoService, log, cfg.Grpc.Host, cfg.Grpc.Port),
 	}, nil
 }

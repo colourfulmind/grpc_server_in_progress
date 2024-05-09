@@ -1,8 +1,8 @@
 package logsetup
 
 import (
-	"articles/pkg/logger/handlers/slogpretty"
 	"log/slog"
+	"main/pkg/logger/handlers/slogpretty"
 	"os"
 )
 

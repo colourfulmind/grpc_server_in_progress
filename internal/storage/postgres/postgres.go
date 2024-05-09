@@ -18,12 +18,12 @@ type Storage struct {
 }
 
 type Postgres struct {
-	host     string `yaml:"host"`
-	port     int    `yaml:"port"`
-	user     string `yaml:"user"`
-	password string `yaml:"password"`
-	dbname   string `yaml:"db_name"`
-	sslMode  string `yaml:"ssl_mode"`
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	DBName   string `yaml:"db_name"`
+	SSLMode  string `yaml:"ssl_mode"`
 }
 
 // New create a connection to database and returns a structure pointer to the created database
@@ -32,7 +32,7 @@ func New(p Postgres) (*Storage, error) {
 
 	// Data Source Name
 	dsn := fmt.Sprintf("host=%s port=%d user=%s dbname=%s password=%s sslmode=%s",
-		p.host, p.port, p.user, p.dbname, p.password, p.sslMode)
+		p.Host, p.Port, p.User, p.DBName, p.Password, p.SSLMode)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
