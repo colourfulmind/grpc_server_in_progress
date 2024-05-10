@@ -10,6 +10,7 @@ import (
 	"main/internal/services/sso"
 	"main/pkg/logger/sl"
 	server "main/protos/gen/go/blog"
+	"regexp"
 )
 
 const EmptyValue = 0
@@ -100,9 +101,12 @@ func (s *ServerSSO) Login(ctx context.Context, req *server.LoginRequest) (*serve
 
 // ValidateCredentials checks if email or password formats are correct.
 func ValidateCredentials(email, password string) error {
-	// TODO: regex to check the email
-	if email == "" {
-		return ewrap.ErrEmailRequired
+	matched, err := regexp.MatchString(`([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9_-]+)`, email)
+	if err != nil {
+		return ewrap.ErrParsingRegex
+	}
+	if !matched || email == "" {
+		return ewrap.ErrInvalidEmail
 	}
 	// TODO: minimum password length
 	if password == "" {

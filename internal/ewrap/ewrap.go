@@ -7,7 +7,8 @@ import (
 
 var (
 	UserIdIsRequired      = status.Error(codes.InvalidArgument, "user id is required")
-	ErrEmailRequired      = status.Error(codes.InvalidArgument, "email is required")
+	ErrInvalidEmail       = status.Error(codes.InvalidArgument, "email is invalid")
+	ErrParsingRegex       = status.Error(codes.InvalidArgument, "error parsing regexp")
 	ErrPasswordRequired   = status.Error(codes.InvalidArgument, "password is required")
 	ErrInvalidCredentials = status.Error(codes.InvalidArgument, "incorrect email or password")
 	UserAlreadyExists     = status.Error(codes.AlreadyExists, "user already exists")
