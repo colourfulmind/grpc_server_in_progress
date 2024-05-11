@@ -7,3 +7,8 @@ type User struct {
 	PassHash []byte
 	IsAdmin  bool
 }
+
+type NewUser struct {
+	Email    string
+	Password string
+}
