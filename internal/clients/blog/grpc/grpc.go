@@ -2,13 +2,14 @@ package grpcclient
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	grpclog "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	grpcretry "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/retry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"log/slog"
 	"main/internal/config"
 	server "main/protos/gen/go/blog"
@@ -46,6 +47,7 @@ func (c *Client) ConfigureRouter() {
 //	return http.ListenAndServe(":8080", c.Router)
 //}
 
+// NewConnection creates new connection to grpc server
 func NewConnection(ctx context.Context, log *slog.Logger, addr string, retriesCount int, timeout time.Duration) (*grpc.ClientConn, error) {
 	const op = "internal/clients/blog/NewConnection"
 
@@ -60,7 +62,8 @@ func NewConnection(ctx context.Context, log *slog.Logger, addr string, retriesCo
 	}
 
 	cc, err := grpc.DialContext(ctx, addr,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		//grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})),
 		grpc.WithChainUnaryInterceptor(
 			grpclog.UnaryClientInterceptor(InterceptorLogger(log), logOpts...),
 			grpcretry.UnaryClientInterceptor(retryOpts...),

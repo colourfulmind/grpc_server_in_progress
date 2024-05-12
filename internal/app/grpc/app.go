@@ -3,6 +3,7 @@ package grpcserver
 import (
 	"fmt"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log/slog"
 	"main/internal/grpc/sso"
 	"net"
@@ -20,6 +21,7 @@ type App struct {
 func New(ssoServer sso.SSO, log *slog.Logger, host string, port int) *App {
 	GRPCServer := grpc.NewServer()
 	sso.Register(GRPCServer, ssoServer, log)
+	reflection.Register(GRPCServer)
 	return &App{
 		GRPCServer: GRPCServer,
 		log:        log,

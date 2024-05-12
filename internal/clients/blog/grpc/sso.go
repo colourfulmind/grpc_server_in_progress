@@ -3,6 +3,7 @@ package grpcclient
 import (
 	"context"
 	"github.com/gin-gonic/gin"
+	"log/slog"
 	"main/internal/domain/models"
 	"main/pkg/logger/sl"
 	server "main/protos/gen/go/blog"
@@ -18,7 +19,9 @@ func (c *Client) RegisterNewUser(ginCtx *gin.Context) {
 		return
 	}
 
-	c.log.Info("user", user)
+	c.log.Info("user credentials",
+		slog.String("email", user.Email),
+		slog.String("password", user.Password))
 
 	resp, err := c.sso.RegisterNewUser(context.Background(), &server.RegisterRequest{
 		Email:    user.Email,
